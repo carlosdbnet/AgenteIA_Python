@@ -1,0 +1,5 @@
+neonize
+openai
+python-dotenv
+# Dependências extras para processamento de imagem/áudio
+requests
