@@ -2,6 +2,7 @@ import os
 import sys
 import tempfile
 import base64
+import requests
 from openai import OpenAI
 from dotenv import load_dotenv
 
@@ -60,4 +61,24 @@ def transcribe_audio(audio_bytes):
                 
     except Exception as e:
         print(f"Transcription Error: {e}")
+        return None
+
+def generate_image(prompt):
+    try:
+        response = client.images.generate(
+            model="dall-e-3",
+            prompt=prompt,
+            size="1024x1024",
+            quality="standard",
+            n=1,
+        )
+        
+        image_url = response.data[0].url
+        # Download the image
+        img_response = requests.get(image_url)
+        if img_response.status_code == 200:
+            return img_response.content
+        return None
+    except Exception as e:
+        print(f"Image Generation Error: {e}")
         return None

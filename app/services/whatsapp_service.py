@@ -4,7 +4,7 @@ import base64
 from neonize.client import NewClient
 from neonize.events import MessageEv, ReceiptEv
 from neonize.utils.jid import Jid2String
-from app.services.openai_service import generate_response, transcribe_audio
+from app.services.openai_service import generate_response, transcribe_audio, generate_image
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -109,6 +109,22 @@ def handle_message(client: NewClient, message: MessageEv):
             # Send reply - Fixed argument order: (text, quoted_message)
             client.reply_message(response_text, message)
             print(f"Sent: {response_text[:50]}...")
+        
+        # Check for !image or !imagem prefix
+        elif text.startswith("!image ") or text.startswith("!imagem "):
+            prompt = text.split(" ", 1)[1]
+            print(f"Generating image for {chat_id}: {prompt}")
+            
+            # Send a "generating" message
+            client.reply_message("🎨 Gerando sua imagem... Aguarde um momento.", message)
+            
+            image_bytes = generate_image(prompt)
+            if image_bytes:
+                chat_jid = message.Info.MessageSource.Chat
+                client.send_image(chat_jid, image_bytes, caption=f"Aqui está sua imagem: {prompt}", quoted=message.Message)
+                print(f"Image sent to {chat_id}")
+            else:
+                client.reply_message("❌ Desculpe, tive um erro ao gerar sua imagem.", message)
     except Exception as e:
         print(f"Error in handle_message: {e}")
         import traceback
