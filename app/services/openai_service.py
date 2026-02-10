@@ -1,6 +1,7 @@
 import os
 import sys
 import tempfile
+import base64
 from openai import OpenAI
 from dotenv import load_dotenv
 
@@ -29,7 +30,7 @@ def generate_response(messages):
         api_messages = [{"role": "system", "content": system_prompt}] + messages
         
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini", # Cheaper model with Vision support
             messages=api_messages
         )
         

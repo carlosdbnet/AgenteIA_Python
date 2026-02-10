@@ -1,5 +1,6 @@
 import os
 import time
+import base64
 from neonize.client import NewClient
 from neonize.events import MessageEv, ReceiptEv
 from neonize.utils.jid import Jid2String
@@ -44,19 +45,54 @@ def handle_message(client: NewClient, message: MessageEv):
                     print("Failed to download audio bytes.")
             except Exception as e:
                 print(f"Error capturing audio: {e}")
+        elif message.Message.imageMessage:
+            caption = message.Message.imageMessage.caption or "Análise de imagem"
+            print(f"Captured image from {chat_id}. Downloading...")
+            try:
+                image_bytes = client.download_any(message.Message)
+                if image_bytes:
+                    print(f"Image downloaded successfuly ({len(image_bytes)} bytes). Sending to Vision...")
+                    b64_image = base64.b64encode(image_bytes).decode("utf-8")
+                    
+                    if chat_id not in conversation_history:
+                        conversation_history[chat_id] = []
+                    
+                    history = conversation_history[chat_id]
+                    # Format for OpenAI Vision
+                    history.append({
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": f"!bot {caption}"},
+                            {
+                                "type": "image_url",
+                                "image_url": {"url": f"data:image/jpeg;base64,{b64_image}"}
+                            }
+                        ]
+                    })
+                    
+                    # Force text to contain !bot to trigger processing below
+                    text = f"!bot [IMAGEM] {caption}"
+                else:
+                    print("Failed to download image bytes.")
+            except Exception as e:
+                print(f"Error capturing image: {e}")
         
         if not text:
             return
 
         # Check for !bot prefix
         if text.startswith("!bot "):
-            prompt = text[5:]
+            # Special case for images already in history
+            if "[IMAGEM]" in text:
+                prompt = text
+            else:
+                prompt = text[5:]
+                if chat_id not in conversation_history:
+                    conversation_history[chat_id] = []
+                history = conversation_history[chat_id]
+                history.append({"role": "user", "content": prompt})
             
-            if chat_id not in conversation_history:
-                conversation_history[chat_id] = []
-                
             history = conversation_history[chat_id]
-            history.append({"role": "user", "content": prompt})
             
             # Keep history small
             if len(history) > MAX_HISTORY:
