@@ -4,6 +4,7 @@ import base64
 from neonize.client import NewClient
 from neonize.events import MessageEv, ReceiptEv
 from neonize.utils.jid import Jid2String
+from neonize.utils.enum import ChatPresence, ChatPresenceMedia
 from app.services.openai_service import generate_response, transcribe_audio, generate_image
 from dotenv import load_dotenv
 
@@ -99,6 +100,11 @@ def handle_message(client: NewClient, message: MessageEv):
                 history.pop(0)
                 
             print(f"Generating response for {chat_id}...")
+            
+            # Simulate typing
+            chat_jid = message.Info.MessageSource.Chat
+            client.send_chat_presence(chat_jid, ChatPresence.CHAT_PRESENCE_COMPOSING, ChatPresenceMedia.CHAT_PRESENCE_MEDIA_TEXT)
+            
             response_text = generate_response(history)
             
             # Add to history
@@ -118,10 +124,14 @@ def handle_message(client: NewClient, message: MessageEv):
             # Send a "generating" message
             client.reply_message("🎨 Gerando sua imagem... Aguarde um momento.", message)
             
+            # Also show typing status for image generation
+            chat_jid = message.Info.MessageSource.Chat
+            client.send_chat_presence(chat_jid, ChatPresence.CHAT_PRESENCE_COMPOSING, ChatPresenceMedia.CHAT_PRESENCE_MEDIA_TEXT)
+            
             image_bytes = generate_image(prompt)
             if image_bytes:
                 chat_jid = message.Info.MessageSource.Chat
-                client.send_image(chat_jid, image_bytes, caption=f"Aqui está sua imagem: {prompt}", quoted=message.Message)
+                client.send_image(chat_jid, image_bytes, caption=f"Aqui está sua imagem: {prompt}", quoted=message)
                 print(f"Image sent to {chat_id}")
             else:
                 client.reply_message("❌ Desculpe, tive um erro ao gerar sua imagem.", message)
