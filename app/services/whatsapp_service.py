@@ -6,6 +6,7 @@ from neonize.events import MessageEv, ReceiptEv
 from neonize.utils.jid import Jid2String
 from neonize.utils.enum import ChatPresence, ChatPresenceMedia
 from app.services.openai_service import generate_response, transcribe_audio, generate_image
+from app.utils.script_runner import run_script
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -117,7 +118,7 @@ def handle_message(client: NewClient, message: MessageEv):
             print(f"Sent: {response_text[:50]}...")
         
         # Check for !image or !imagem prefix
-        elif text.startswith("!image ") or text.startswith("!imagem "):
+        elif text.startswith("!img "):
             prompt = text.split(" ", 1)[1]
             print(f"Generating image for {chat_id}: {prompt}")
             
@@ -135,6 +136,22 @@ def handle_message(client: NewClient, message: MessageEv):
                 print(f"Image sent to {chat_id}")
             else:
                 client.reply_message("❌ Desculpe, tive um erro ao gerar sua imagem.", message)
+        
+        # Check for !run script command
+        elif text.startswith("!run "):
+            parts = text.split(" ")
+            if len(parts) < 2:
+                client.reply_message("💡 Uso: !run [nome_do_script] [parametros...]", message)
+                return
+                
+            script_name = parts[1]
+            script_args = parts[2:]
+            
+            print(f"Executing script '{script_name}' with args {script_args} for {chat_id}")
+            client.reply_message(f"⚙️ Executando script '{script_name}'...", message)
+            
+            output = run_script(script_name, script_args)
+            client.reply_message(f"📄 Resultado:\n\n{output}", message)
     except Exception as e:
         print(f"Error in handle_message: {e}")
         import traceback
