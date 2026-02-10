@@ -13,8 +13,14 @@ def run_script(script_name, args):
     scripts_dir = os.path.join(os.getcwd(), "app", "scripts")
     script_path = os.path.join(scripts_dir, f"{script_name}.py")
     
+    # Check for case sensitivity (especially on Linux/Railway)
     if not os.path.exists(script_path):
-        return f"❌ Erro: O script '{script_name}.py' não foi encontrado na pasta app/scripts/."
+        lower_path = os.path.join(scripts_dir, f"{script_name.lower()}.py")
+        if os.path.exists(lower_path):
+            script_path = lower_path
+        else:
+            available = [f.replace(".py", "") for f in os.listdir(scripts_dir) if f.endswith(".py")]
+            return f"❌ Erro: O script '{script_name}.py' não foi encontrado.\n\nScripts disponíveis: {', '.join(available)}"
     
     try:
         # Use the same python interpreter running the bot
