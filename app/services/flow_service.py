@@ -42,19 +42,20 @@ def update_user_state(chat_id, state, data=None):
 
 def get_flow_message(tag, default):
     """
-    Extracts a edynamic messag from system_prompt.txt based on a tag like [SAUDACAO].
+    Extracts a dynamic message from system_prompt.txt based on a tag like [SAUDACAO].
     """
-    prompt_file = "system_prompt.txt"
+    prompt_file = os.getenv("SYSTEM_PROMPT_FILE") or "system_prompt.txt"
     if os.path.exists(prompt_file):
         try:
             with open(prompt_file, "r", encoding="utf-8") as f:
                 for line in f:
-                    if line.startswith(f"[{tag}]"):
-                        msg = line.replace(f"[{tag}]", "").strip()
+                    clean_line = line.strip()
+                    if clean_line.startswith(f"[{tag}]"):
+                        msg = clean_line.replace(f"[{tag}]", "").strip()
                         # Replace literal \n with actual newlines
                         return msg.replace("\\n", "\n")
-        except:
-            pass
+        except Exception as e:
+            print(f"Error reading flow message from file: {e}")
     return default
 
 def process_flow(chat_id, text):
