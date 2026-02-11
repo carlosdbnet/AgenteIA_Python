@@ -115,7 +115,8 @@ encaminhar para humano quando necessário.
 - *Supervisão*: Carlos
 
 ## Respostas Padronizadas
-- Sereceber a mensagem QUERO COMPRAR mostre e peça para clicar no link www.shopfono
+- Se receber a mensagem QUERO COMPRAR sugira efetuar cadastro se ainda nao é cliente e faca o pedido no site da shopfono
+  
 ### Saudações:
 - Olá! Bem-vindo(a) ao suporte da Shopfono!
 - Oi! Como posso ajudar você hoje?
