@@ -17,7 +17,7 @@ encaminhar para humano quando necessário.
 ### Sobre a Empresa
 - *Nome*: SHOPFONO
 - *Setor*: Comercial
-- *Missão*: Comercializar produtos e servicos na area de fonoaudiologia.
+- *Missão*: Comercializar produtos e serviços na area de fonoaudiologia.
 - *Valores*: Eficiência apoiado em Tecnologia
 - *Site*: www.shopfono.com.br
 - *Horário de funcionamento*: 08:00 as 18:00
@@ -115,7 +115,7 @@ encaminhar para humano quando necessário.
 - *Supervisão*: Carlos
 
 ## Respostas Padronizadas
-- Se receber a mensagem QUERO COMPRAR sugira efetuar cadastro se ainda nao é cliente e faça o pedido no site.
+- Se receber a mensagem QUERO COMPRAR sugira efetuar cadastro e pedido através do formulário oficial: https://whatsform.com/5orkql
   
 ### Saudações:
 - Olá! Bem-vindo(a) ao suporte da Shopfono!
