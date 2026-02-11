@@ -7,6 +7,7 @@ from neonize.utils.jid import Jid2String
 from neonize.utils.enum import ChatPresence, ChatPresenceMedia
 from app.services.openai_service import generate_response, transcribe_audio, generate_image
 from app.utils.script_runner import run_script
+from app.services.flow_service import process_flow
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -82,7 +83,19 @@ def handle_message(client: NewClient, message: MessageEv):
         if not text:
             return
 
-        # Check for !bot prefix
+        # 1. Process structured flow first (if not a command)
+        is_command = text.startswith("!")
+        if not is_command:
+            flow_response, should_stop = process_flow(chat_id, text)
+            if flow_response:
+                client.reply_message(flow_response, message)
+                if should_stop:
+                    return
+            else:
+                # If flow returns None, it means the user is in FREE_CHAT
+                # Automatically prefix with !bot to trigger OpenAI
+                text = "!bot " + text
+        
         if text.startswith("!bot "):
             # Special case for images already in history
             if "[IMAGEM]" in text:
