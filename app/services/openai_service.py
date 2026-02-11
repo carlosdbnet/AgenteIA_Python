@@ -11,17 +11,21 @@ load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def get_system_prompt():
-    system_content = os.getenv("systema_prompty") or os.getenv("SYSTEM_PROMPT") or "Você é um assistente útil e amigável."
+    prompt_file = os.getenv("SYSTEM_PROMPT_FILE") or "system_prompt.txt"
     
-    prompt_file = os.getenv("SYSTEM_PROMPT_FILE")
-    if prompt_file and os.path.exists(prompt_file):
+    # Priority 1: Read from file if it exists
+    if os.path.exists(prompt_file):
         try:
             with open(prompt_file, "r", encoding="utf-8") as f:
-                system_content = f.read()
+                content = f.read().strip()
+                if content:
+                    return content
         except Exception as e:
             print(f"Error reading system prompt file: {e}")
-            
-    return system_content
+
+    # Priority 2: Use environment variables
+    # Priority 3: Default fallback
+    return os.getenv("SYSTEM_PROMPT") or "Você é um assistente útil e amigável."
 
 def generate_response(messages):
     try:

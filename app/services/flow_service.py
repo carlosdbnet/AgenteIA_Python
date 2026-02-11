@@ -40,6 +40,23 @@ def update_user_state(chat_id, state, data=None):
     
     save_states(states)
 
+def get_flow_message(tag, default):
+    """
+    Extracts a edynamic messag from system_prompt.txt based on a tag like [SAUDACAO].
+    """
+    prompt_file = "system_prompt.txt"
+    if os.path.exists(prompt_file):
+        try:
+            with open(prompt_file, "r", encoding="utf-8") as f:
+                for line in f:
+                    if line.startswith(f"[{tag}]"):
+                        msg = line.replace(f"[{tag}]", "").strip()
+                        # Replace literal \n with actual newlines
+                        return msg.replace("\\n", "\n")
+        except:
+            pass
+    return default
+
 def process_flow(chat_id, text):
     """
     Manages the conversation flow logic.
@@ -53,22 +70,26 @@ def process_flow(chat_id, text):
     # Reset flow if user says "reset" or "restart"
     if text.lower() in ["reiniciar", "reset", "menu"]:
         update_user_state(chat_id, UserState.START, {})
-        return "🔄 Fluxo reiniciado! Olá, sou a Assistente da Shopfono. Como você se chama?", True
+        msg = get_flow_message("SAUDACAO", "Olá! Bem-vindo(a) à Shopfono! ✨")
+        return f"🔄 Fluxo reiniciado! {msg}", True
 
     if state == UserState.START:
         update_user_state(chat_id, UserState.COLLECTING_NAME)
-        return "Olá! Bem-vindo(a) à Shopfono! ✨\n\nEu sou sua assistente virtual. Para começarmos, como posso te chamar?", True
+        return get_flow_message("SAUDACAO", "Olá! Bem-vindo(a) à Shopfono! ✨") + "\n\n" + \
+               get_flow_message("PEDIR_NOME", "Eu sou sua assistente virtual. Para começarmos, como posso te chamar?"), True
 
     elif state == UserState.COLLECTING_NAME:
         name = text.strip()
         update_user_state(chat_id, UserState.COLLECTING_INTEREST, {"name": name})
-        return f"Prazer em te conhecer, {name}! 😊\n\nQual das áreas abaixo você tem mais interesse hoje?\n\n1. Equipamentos e Instrumentos\n2. Materiais Terapêuticos\n3. Cursos e Treinamentos\n4. Suporte Técnico", True
+        msg = get_flow_message("PEDIR_INTERESSE", "Prazer em te conhecer, {name}! 😊\n\nQual das áreas abaixo você tem mais interesse hoje?\n\n1. Equipamentos e Instrumentos\n2. Materiais Terapêuticos\n3. Cursos e Treinamentos\n4. Suporte Técnico")
+        return msg.format(name=name), True
 
     elif state == UserState.COLLECTING_INTEREST:
         interest = text.strip()
         update_user_state(chat_id, UserState.FREE_CHAT, {"interest": interest})
         name = data.get("name", "cliente") if isinstance(data, dict) else "cliente"
-        return f"Entendido, {name}! Vou focar em te ajudar com '{interest}'.\n\nComo posso te ajudar especificamente agora? Pode me perguntar qualquer coisa!", True
+        msg = get_flow_message("MENSAGEM_FINAL", "Entendido, {name}! Vou focar em te ajudar.\n\nComo posso te ajudar especificamente agora? Pode me perguntar qualquer coisa!")
+        return msg.format(name=name), True
 
     # If state is FREE_CHAT, we return None to let the main handler use OpenAI
     return None, False
