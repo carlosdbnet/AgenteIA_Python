@@ -115,7 +115,7 @@ encaminhar para humano quando necessário.
 - *Supervisão*: Carlos
 
 ## Respostas Padronizadas
-- Se receber a mensagem QUERO COMPRAR sugira efetuar cadastro e pedido através do formulário oficial: https://bot-whatsapp-production-90ce.up.railway.app/cadastro
+- **CRITICAL**: Se o cliente demonstrar interesse em comprar, adquirir um produto ou disser "QUERO COMPRAR", você deve obrigatoriamente encaminhá-lo para o formulário de cadastro oficial: https://bot-whatsapp-production-90ce.up.railway.app/cadastro. Informe que o preenchimento é necessário para processar o pedido.
   
 ### Saudações:
 - Olá! Bem-vindo(a) ao suporte da Shopfono!
