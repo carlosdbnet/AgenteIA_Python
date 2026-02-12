@@ -15,57 +15,9 @@ from app.utils.script_runner import run_script
 
 app = FastAPI(title="Shopfono AI Bot Webhook")
 
-async def process_and_notify(data, source):
-    # 1. Salva no Excel via script
-    data_str = json.dumps(data)
-    output = run_script("save_to_excel", [data_str])
-    
-    # 2. Tenta extrair o telefone para notificar o cliente
-    phone = None
-    possible_keys = ["Telefone", "Whatsapp", "WhatsApp", "Fone", "Celular"]
-    
-    for key in possible_keys:
-        if key in data:
-            val = data[key]
-            if isinstance(val, list) and len(val) > 0:
-                phone = val[0]
-            else:
-                phone = str(val)
-            break
-            
-    if phone:
-        msg = f"Olá! Recebemos seu formulário ({source}) com sucesso. 📝✅\n\nNossa equipe entrará em contato em breve. Obrigado por escolher a Shopfono! 🚀"
-        send_whatsapp_message(phone, msg)
-        
-    return output
-
 @app.get("/")
 def home():
     return {"status": "online", "service": "Shopfono AI Bot"}
-
-@app.post("/webhook/whatsform")
-async def whatsform_webhook(request: Request):
-    try:
-        data = await request.json()
-        print(f"📥 Webhook recebido do WhatsForm: {data}")
-        # Apenas salva no Excel, sem enviar mensagem de retorno no WhatsApp
-        data_str = json.dumps(data)
-        output = run_script("save_to_excel", [data_str])
-        return {"status": "success", "message": "Dados gravados (WhatsForm) - Sem notificação", "output": output}
-    except Exception as e:
-        print(f"❌ Erro no Webhook WhatsForm: {e}")
-        return {"status": "error", "message": str(e)}
-
-@app.post("/webhook/google")
-async def google_webhook(request: Request):
-    try:
-        data = await request.json()
-        print(f"📥 Webhook recebido do Google Forms: {data}")
-        output = await process_and_notify(data, "Google Forms")
-        return {"status": "success", "message": "Dados processados (Google Forms)", "output": output}
-    except Exception as e:
-        print(f"❌ Erro no Webhook Google: {e}")
-        return {"status": "error", "message": str(e)}
 
 
 

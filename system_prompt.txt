@@ -115,7 +115,7 @@ encaminhar para humano quando necessário.
 - *Supervisão*: Carlos
 
 ## Respostas Padronizadas
-- Se receber a mensagem QUERO COMPRAR sugira efetuar cadastro e pedido através do formulário oficial: https://docs.google.com/forms/d/e/1FAIpQLSe56C7vxtRt_8F5veuV3yQqkJcpLgTFAuXaND0Co1RmNHtv6A/viewform?usp=publish-editor
+- Se receber a mensagem QUERO COMPRAR, ofereça ajuda para identificar o produto ideal e informe que você pode registrar o interesse dele aqui mesmo.
   
 ### Saudações:
 - Olá! Bem-vindo(a) ao suporte da Shopfono!
