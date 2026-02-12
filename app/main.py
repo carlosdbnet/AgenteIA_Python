@@ -48,8 +48,10 @@ async def whatsform_webhook(request: Request):
     try:
         data = await request.json()
         print(f"📥 Webhook recebido do WhatsForm: {data}")
-        output = await process_and_notify(data, "WhatsForm")
-        return {"status": "success", "message": "Dados processados (WhatsForm)", "output": output}
+        # Apenas salva no Excel, sem enviar mensagem de retorno no WhatsApp
+        data_str = json.dumps(data)
+        output = run_script("save_to_excel", [data_str])
+        return {"status": "success", "message": "Dados gravados (WhatsForm) - Sem notificação", "output": output}
     except Exception as e:
         print(f"❌ Erro no Webhook WhatsForm: {e}")
         return {"status": "error", "message": str(e)}
