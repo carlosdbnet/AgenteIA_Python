@@ -69,14 +69,25 @@ def send_registration_email(to_email, data):
     message.attach(MIMEText(html_content, "html"))
 
     try:
-        print(f"📧 Conectando a {smtp_host}:{smtp_port} (timeout 30s)...")
-        with smtplib.SMTP(smtp_host, int(smtp_port), timeout=30) as server:
-            print("🔐 Iniciando TLS...")
-            server.starttls()
+        port_int = int(smtp_port)
+        print(f"📧 Conectando a {smtp_host}:{port_int} (timeout 30s)...")
+        
+        # Use SMTP_SSL for port 465, standard SMTP for others
+        if port_int == 465:
+            server_class = smtplib.SMTP_SSL
+        else:
+            server_class = smtplib.SMTP
+
+        with server_class(smtp_host, port_int, timeout=30) as server:
+            if port_int != 465:
+                print("🔐 Iniciando TLS...")
+                server.starttls()
+            
             print(f"🔑 Tentando login para {smtp_user}...")
             server.login(smtp_user, smtp_password)
             print("📤 Enviando mensagem...")
             server.send_message(message)
+            
         print(f"✅ Email enviado com sucesso para {to_email}")
         return True
     except Exception as e:
