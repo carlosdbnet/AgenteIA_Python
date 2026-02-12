@@ -4,11 +4,15 @@ import threading
 import json
 import uvicorn
 from fastapi import FastAPI, Request
+
+# Fix: Add the project root to sys.path *BEFORE* absolute imports from app
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
 from app.services.whatsapp_service import start_whatsapp
 from app.utils.script_runner import run_script
 
-# Add the project root to sys.path to allow imports from app
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 app = FastAPI(title="Shopfono AI Bot Webhook")
 
@@ -21,18 +25,30 @@ async def whatsform_webhook(request: Request):
     try:
         data = await request.json()
         print(f"📥 Webhook recebido do WhatsForm: {data}")
+        data_str = json.dumps(data)
+        output = run_script("save_to_excel", [data_str])
+        return {"status": "success", "message": "Dados processados (WhatsForm)", "output": output}
+    except Exception as e:
+        print(f"❌ Erro no Webhook WhatsForm: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post("/webhook/google")
+async def google_webhook(request: Request):
+    try:
+        data = await request.json()
+        print(f"📥 Webhook recebido do Google Forms: {data}")
         
         # Converte os dados em JSON string para passar ao script
         data_str = json.dumps(data)
         
-        # Executa o script de salvamento (passando os dados como parâmetro)
+        # Executa o mesmo script de salvamento
         output = run_script("save_to_excel", [data_str])
         
-        print(f"🖥️ Saída do script: {output}")
-        return {"status": "success", "message": "Dados processados pelo script", "output": output}
+        return {"status": "success", "message": "Dados processados (Google Forms)", "output": output}
     except Exception as e:
-        print(f"❌ Erro no Webhook: {e}")
+        print(f"❌ Erro no Webhook Google: {e}")
         return {"status": "error", "message": str(e)}
+
 
 def run_bot():
     try:
