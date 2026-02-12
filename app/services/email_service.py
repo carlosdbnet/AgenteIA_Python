@@ -15,8 +15,15 @@ def send_registration_email(to_email, data):
     smtp_user = os.getenv("SMTP_USER")
     smtp_password = os.getenv("SMTP_PASSWORD")
 
+    # Debug info (masked)
+    print(f"🔍 Verificando variáveis: HOST={'OK' if smtp_host else 'MISSING'}, USER={'OK' if smtp_user else 'MISSING'}, PASS={'OK' if smtp_password else 'MISSING'}")
+
     if not all([smtp_host, smtp_user, smtp_password]):
-        print("⚠️ Erro: Credenciais SMTP não configuradas no .env. Email não enviado.")
+        missing = []
+        if not smtp_host: missing.append("SMTP_HOST")
+        if not smtp_user: missing.append("SMTP_USER")
+        if not smtp_password: missing.append("SMTP_PASSWORD")
+        print(f"⚠️ Erro: Credenciais SMTP incompletas no Railway ({', '.join(missing)}). Email não enviado.")
         return False
 
     # Create Message
