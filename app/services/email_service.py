@@ -70,9 +70,30 @@ def send_registration_email(to_email, data):
 
     try:
         port_int = int(smtp_port)
-        print(f"📧 Conectando a {smtp_host}:{port_int} (timeout 30s)...")
+        print(f"📧 Diagnóstico de rede para {smtp_host}:{port_int}...")
         
-        # Use SMTP_SSL for port 465, standard SMTP for others
+        # Test DNS resolution
+        try:
+            import socket
+            ips = socket.gethostbyname_ex(smtp_host)
+            print(f"🌐 IPs resolvidos: {ips[2]}")
+        except Exception as dns_err:
+            print(f"❌ Erro de DNS: {dns_err}")
+
+        # Test socket connection directly (IPv4)
+        try:
+            print(f"🔌 Testando conexão socket para {smtp_host}:{port_int}...")
+            s = socket.create_connection((smtp_host, port_int), timeout=10)
+            s.close()
+            print("🔗 Conexão socket estabelecida com sucesso!")
+        except Exception as sock_err:
+            print(f"❌ Socket recusado: {sock_err}")
+            if port_int == 465:
+                print("💡 DICA: Tente a porta 587 se a 465 estiver bloqueada.")
+            elif port_int == 587:
+                 print("💡 DICA: Tente a porta 465 ou 2525.")
+
+        # Real SMTP Connection
         if port_int == 465:
             server_class = smtplib.SMTP_SSL
         else:
@@ -83,7 +104,7 @@ def send_registration_email(to_email, data):
                 print("🔐 Iniciando TLS...")
                 server.starttls()
             
-            print(f"🔑 Tentando login para {smtp_user}...")
+            print(f"🔑 Efetuando login ({smtp_user})...")
             server.login(smtp_user, smtp_password)
             print("📤 Enviando mensagem...")
             server.send_message(message)
@@ -91,7 +112,7 @@ def send_registration_email(to_email, data):
         print(f"✅ Email enviado com sucesso para {to_email}")
         return True
     except Exception as e:
-        print(f"❌ Erro ao enviar email para {to_email}: {e}")
+        print(f"❌ Erro fatal no envio: {e}")
         import traceback
         traceback.print_exc()
         return False
