@@ -10,11 +10,34 @@ project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if project_root not in sys.path:
     sys.path.append(project_root)
 
-from app.services.whatsapp_service import start_whatsapp
+from app.services.whatsapp_service import start_whatsapp, send_whatsapp_message
 from app.utils.script_runner import run_script
 
-
 app = FastAPI(title="Shopfono AI Bot Webhook")
+
+async def process_and_notify(data, source):
+    # 1. Salva no Excel via script
+    data_str = json.dumps(data)
+    output = run_script("save_to_excel", [data_str])
+    
+    # 2. Tenta extrair o telefone para notificar o cliente
+    phone = None
+    possible_keys = ["Telefone", "Whatsapp", "WhatsApp", "Fone", "Celular"]
+    
+    for key in possible_keys:
+        if key in data:
+            val = data[key]
+            if isinstance(val, list) and len(val) > 0:
+                phone = val[0]
+            else:
+                phone = str(val)
+            break
+            
+    if phone:
+        msg = f"Olá! Recebemos seu formulário ({source}) com sucesso. 📝✅\n\nNossa equipe entrará em contato em breve. Obrigado por escolher a Shopfono! 🚀"
+        send_whatsapp_message(phone, msg)
+        
+    return output
 
 @app.get("/")
 def home():
@@ -25,8 +48,7 @@ async def whatsform_webhook(request: Request):
     try:
         data = await request.json()
         print(f"📥 Webhook recebido do WhatsForm: {data}")
-        data_str = json.dumps(data)
-        output = run_script("save_to_excel", [data_str])
+        output = await process_and_notify(data, "WhatsForm")
         return {"status": "success", "message": "Dados processados (WhatsForm)", "output": output}
     except Exception as e:
         print(f"❌ Erro no Webhook WhatsForm: {e}")
@@ -37,17 +59,12 @@ async def google_webhook(request: Request):
     try:
         data = await request.json()
         print(f"📥 Webhook recebido do Google Forms: {data}")
-        
-        # Converte os dados em JSON string para passar ao script
-        data_str = json.dumps(data)
-        
-        # Executa o mesmo script de salvamento
-        output = run_script("save_to_excel", [data_str])
-        
+        output = await process_and_notify(data, "Google Forms")
         return {"status": "success", "message": "Dados processados (Google Forms)", "output": output}
     except Exception as e:
         print(f"❌ Erro no Webhook Google: {e}")
         return {"status": "error", "message": str(e)}
+
 
 
 def run_bot():

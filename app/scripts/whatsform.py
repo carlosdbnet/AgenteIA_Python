@@ -2,7 +2,7 @@ import webbrowser
 import sys
 
 def main():
-    url = "https://whatsform.com/5orkql"
+    url = "https://docs.google.com/forms/d/e/1FAIpQLSe56C7vxtRt_8F5veuV3yQqkJcpLgTFAuXaND0Co1RmNHtv6A/viewform?usp=publish-editor"
     
     # Se estiver rodando localmente com interface gráfica, tenta abrir o navegador
     # No servidor (Railway), isso não terá efeito visual, mas não quebra o script

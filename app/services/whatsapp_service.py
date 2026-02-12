@@ -12,9 +12,40 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# History management
+# Global client to be accessed by other services (like webhooks)
+whatsapp_client = None
 conversation_history = {}
 MAX_HISTORY = 10
+
+def send_whatsapp_message(jid: str, text: str):
+    """
+    Sends a message to a specific JID. 
+    If JID doesn't have the suffix, it adds @s.whatsapp.net
+    """
+    global whatsapp_client
+    if not whatsapp_client:
+        print("❌ Erro: Cliente WhatsApp não inicializado.")
+        return False
+    
+    try:
+        # Simple JID formatting if it's just a phone number
+        if "@" not in jid:
+            jid = jid.strip().replace("+", "").replace(" ", "")
+            jid = f"{jid}@s.whatsapp.net"
+            
+        from neonize.utils.jid import JID
+        # Convert string JID to JID object if needed by neonize (actually send_message takes JID object)
+        # But wait, Neonize's send_message often prefers JID objects.
+        # Let's check JID creation.
+        from neonize.utils.jid import Jid2String
+        # We need to import JID carefully
+        
+        whatsapp_client.send_message(jid, text)
+        print(f"✅ Mensagem enviada para {jid}")
+        return True
+    except Exception as e:
+        print(f"❌ Erro ao enviar mensagem: {e}")
+        return False
 
 def handle_message(client: NewClient, message: MessageEv):
     try:
@@ -171,13 +202,14 @@ def handle_message(client: NewClient, message: MessageEv):
         traceback.print_exc()
 
 def start_whatsapp():
+    global whatsapp_client
     print("Starting WhatsApp Client (Neonize)...")
     # Neonize saves the session in a sqlite file by default
-    client = NewClient("db.sqlite3")
+    whatsapp_client = NewClient("db.sqlite3")
     
-    @client.event(MessageEv)
+    @whatsapp_client.event(MessageEv)
     def on_message(client: NewClient, message: MessageEv):
         handle_message(client, message)
 
     print("Scan the QR code to connect...")
-    client.connect()
+    whatsapp_client.connect()
