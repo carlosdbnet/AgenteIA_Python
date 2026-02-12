@@ -2,28 +2,28 @@ import smtplib
 import os
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from dotenv import load_dotenv
-
-load_dotenv()
+# Note: load_dotenv() should be called at the app entry point (main.py)
+# so we don't call it here to avoid potential overrides or issues in production.
 
 def send_registration_email(to_email, data):
     """
     Sends a registration confirmation email with all form data to the user.
     """
     smtp_host = os.getenv("SMTP_HOST")
-    smtp_port = os.getenv("SMTP_PORT", 587)
+    smtp_port = os.getenv("SMTP_PORT", "587")
     smtp_user = os.getenv("SMTP_USER")
     smtp_password = os.getenv("SMTP_PASSWORD")
 
     # Debug info (masked)
-    print(f"🔍 Verificando variáveis: HOST={'OK' if smtp_host else 'MISSING'}, USER={'OK' if smtp_user else 'MISSING'}, PASS={'OK' if smtp_password else 'MISSING'}")
+    print(f"🔍 Verificando variáveis no ambiente: HOST={'OK' if smtp_host else 'MISSING'}, USER={'OK' if smtp_user else 'MISSING'}, PASS={'OK' if smtp_password else 'MISSING'}")
 
     if not all([smtp_host, smtp_user, smtp_password]):
         missing = []
         if not smtp_host: missing.append("SMTP_HOST")
         if not smtp_user: missing.append("SMTP_USER")
         if not smtp_password: missing.append("SMTP_PASSWORD")
-        print(f"⚠️ Erro: Credenciais SMTP incompletas no Railway ({', '.join(missing)}). Email não enviado.")
+        print(f"⚠️ Erro: Variáveis detectadas como vazias no Railway: {', '.join(missing)}")
+        print("💡 DICA: No Railway, verifique se você clicou em 'Apply Changes' após salvar as variáveis.")
         return False
 
     # Create Message
