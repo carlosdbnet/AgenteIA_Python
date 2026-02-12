@@ -2,15 +2,46 @@ import smtplib
 import os
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-# Note: load_dotenv() should be called at the app entry point (main.py)
-# so we don't call it here to avoid potential overrides or issues in production.
+import requests
+import json
+
+def send_via_brevo_api(to_email, data, html_content, api_key, sender_email):
+    """
+    Sends email via Brevo REST API (HTTPS Port 443) to bypass SMTP port blocks.
+    """
+    url = "https://api.brevo.com/v3/smtp/email"
+    headers = {
+        "accept": "application/json",
+        "api-key": api_key,
+        "content-type": "application/json"
+    }
+    
+    payload = {
+        "sender": {"name": "Dbnet", "email": sender_email},
+        "to": [{"email": to_email}],
+        "subject": "Confirmação de Cadastro - Shopfono",
+        "htmlContent": html_content
+    }
+    
+    try:
+        print(f"🚀 Enviando via API Brevo (Porta 443)...")
+        response = requests.post(url, headers=headers, data=json.dumps(payload), timeout=15)
+        if response.status_code in [201, 202, 200]:
+            print(f"✅ Email enviado com sucesso via API! (ID: {response.json().get('messageId')})")
+            return True
+        else:
+            print(f"❌ Erro na API Brevo ({response.status_code}): {response.text}")
+            return False
+    except Exception as e:
+        print(f"❌ Erno na requisição API: {e}")
+        return False
 
 def send_registration_email(to_email, data):
     """
     Sends a registration confirmation email with all form data to the user.
     """
     smtp_host = os.getenv("SMTP_HOST")
-    smtp_port = os.getenv("SMTP_PORT", "587")
+    smtp_port = os.getenv("SMTP_PORT", "2525")
     smtp_user = os.getenv("SMTP_USER")
     smtp_password = os.getenv("SMTP_PASSWORD")
 
@@ -18,19 +49,8 @@ def send_registration_email(to_email, data):
     print(f"🔍 Verificando variáveis no ambiente: HOST={'OK' if smtp_host else 'MISSING'}, USER={'OK' if smtp_user else 'MISSING'}, PASS={'OK' if smtp_password else 'MISSING'}")
 
     if not all([smtp_host, smtp_user, smtp_password]):
-        missing = []
-        if not smtp_host: missing.append("SMTP_HOST")
-        if not smtp_user: missing.append("SMTP_USER")
-        if not smtp_password: missing.append("SMTP_PASSWORD")
-        print(f"⚠️ Erro: Variáveis detectadas como vazias no Railway: {', '.join(missing)}")
-        print("💡 DICA: No Railway, verifique se você clicou em 'Apply Changes' após salvar as variáveis.")
+        print(f"⚠️ Erro: Credenciais incompletas. Verifique SMTP_USER e SMTP_PASSWORD.")
         return False
-
-    # Create Message
-    message = MIMEMultipart()
-    message["From"] = smtp_user
-    message["To"] = to_email
-    message["Subject"] = "Confirmação de Cadastro - Shopfono"
 
     # HTML Body
     html_content = f"""
@@ -66,44 +86,21 @@ def send_registration_email(to_email, data):
     </html>
     """
 
-    message.attach(MIMEText(html_content, "html"))
+    # If it's Brevo, use API by default as SMTP is blocked on Railway
+    if smtp_host and "brevo" in smtp_host.lower():
+        return send_via_brevo_api(to_email, data, html_content, smtp_password, smtp_user)
 
+    # Fallback/Legacy SMTP for other providers
+    # [Rest of existing SMTP logic if needed, but for now we focus on Brevo fix]
     try:
+        # Create Message
+        message = MIMEMultipart()
+        message["From"] = smtp_user
+        message["To"] = to_email
+        message["Subject"] = "Confirmação de Cadastro - Shopfono"
+        message.attach(MIMEText(html_content, "html"))
+
         port_int = int(smtp_port)
-        print(f"📧 Diagnóstico de rede para {smtp_host}:{port_int}...")
-        
-        # Test DNS resolution
-        try:
-            import socket
-            ips = socket.gethostbyname_ex(smtp_host)
-            print(f"🌐 IPs resolvidos para {smtp_host}: {ips[2]}")
-        except Exception as dns_err:
-            print(f"❌ Erro de DNS: {dns_err}")
-
-        # Test HTTPS connectivity (Port 443) to confirm if its a general network issue or SMTP block
-        try:
-            print("🌐 Testando conectividade geral (google.com:443)...")
-            test_s = socket.create_connection(("google.com", 443), timeout=5)
-            test_s.close()
-            print("✅ Internet OK (443 acessível). O bloqueio é específico para portas de E-mail (SMTP).")
-        except Exception:
-            print("❌ Internet parece inacessível ou conectividade geral bloqueada.")
-
-        # Test socket connection directly (IPv4)
-        try:
-            print(f"🔌 Testando conexão socket para {smtp_host}:{port_int}...")
-            s = socket.create_connection((smtp_host, port_int), timeout=10)
-            s.close()
-            print("🔗 Conexão socket estabelecida com sucesso!")
-        except Exception as sock_err:
-            print(f"❌ Socket recusado: {sock_err}")
-            print(f"⚠️ O Railway parece estar bloqueando a porta {port_int}. Isso é comum em planos Starter/Trial.")
-            if port_int == 465:
-                print("💡 DICA: Tente a porta 587 (TLS).")
-            elif port_int == 587:
-                 print("💡 DICA: Tente a porta 2525 (se o seu provedor suportar).")
-
-        # Real SMTP Connection
         if port_int == 465:
             server_class = smtplib.SMTP_SSL
         else:
@@ -111,18 +108,10 @@ def send_registration_email(to_email, data):
 
         with server_class(smtp_host, port_int, timeout=30) as server:
             if port_int != 465:
-                print("🔐 Iniciando TLS...")
                 server.starttls()
-            
-            print(f"🔑 Efetuando login ({smtp_user})...")
             server.login(smtp_user, smtp_password)
-            print("📤 Enviando mensagem...")
             server.send_message(message)
-            
-        print(f"✅ Email enviado com sucesso para {to_email}")
         return True
     except Exception as e:
-        print(f"❌ Erro fatal no envio: {e}")
-        import traceback
-        traceback.print_exc()
+        print(f"❌ Erro SMTP: {e}. Considere usar um serviço que suporte HTTP API.")
         return False

@@ -19,7 +19,7 @@ app = FastAPI(title="Shopfono AI Bot Webhook")
 
 @app.get("/")
 def home():
-    return {"status": "online", "service": "Shopfono AI Bot", "version": "1.1.0 - SMTP Diagnostic PRO"}
+    return {"status": "online", "service": "Shopfono AI Bot", "version": "1.1.1 - Brevo API Support"}
 
 @app.get("/cadastro", response_class=HTMLResponse)
 async def get_form():
