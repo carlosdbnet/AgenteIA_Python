@@ -69,10 +69,13 @@ def send_registration_email(to_email, data):
     message.attach(MIMEText(html_content, "html"))
 
     try:
-        print(f"📧 Tentando enviar email via {smtp_host}:{smtp_port}...")
-        with smtplib.SMTP(smtp_host, int(smtp_port)) as server:
+        print(f"📧 Conectando a {smtp_host}:{smtp_port} (timeout 30s)...")
+        with smtplib.SMTP(smtp_host, int(smtp_port), timeout=30) as server:
+            print("🔐 Iniciando TLS...")
             server.starttls()
+            print(f"🔑 Tentando login para {smtp_user}...")
             server.login(smtp_user, smtp_password)
+            print("📤 Enviando mensagem...")
             server.send_message(message)
         print(f"✅ Email enviado com sucesso para {to_email}")
         return True
