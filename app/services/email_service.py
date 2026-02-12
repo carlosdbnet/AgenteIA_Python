@@ -24,7 +24,10 @@ def send_via_brevo_api(to_email, data, html_content, api_key, sender_email):
     }
     
     try:
+        api_key_clean = api_key.strip() if api_key else ""
         print(f"🚀 Enviando via API Brevo (Porta 443)...")
+        print(f" debug: Key len={len(api_key_clean)}, Prefix={api_key_clean[:5]}... (v3 expected)")
+        
         response = requests.post(url, headers=headers, data=json.dumps(payload), timeout=15)
         if response.status_code in [201, 202, 200]:
             print(f"✅ Email enviado com sucesso via API! (ID: {response.json().get('messageId')})")
