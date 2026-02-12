@@ -76,9 +76,18 @@ def send_registration_email(to_email, data):
         try:
             import socket
             ips = socket.gethostbyname_ex(smtp_host)
-            print(f"🌐 IPs resolvidos: {ips[2]}")
+            print(f"🌐 IPs resolvidos para {smtp_host}: {ips[2]}")
         except Exception as dns_err:
             print(f"❌ Erro de DNS: {dns_err}")
+
+        # Test HTTPS connectivity (Port 443) to confirm if its a general network issue or SMTP block
+        try:
+            print("🌐 Testando conectividade geral (google.com:443)...")
+            test_s = socket.create_connection(("google.com", 443), timeout=5)
+            test_s.close()
+            print("✅ Internet OK (443 acessível). O bloqueio é específico para portas de E-mail (SMTP).")
+        except Exception:
+            print("❌ Internet parece inacessível ou conectividade geral bloqueada.")
 
         # Test socket connection directly (IPv4)
         try:
@@ -88,10 +97,11 @@ def send_registration_email(to_email, data):
             print("🔗 Conexão socket estabelecida com sucesso!")
         except Exception as sock_err:
             print(f"❌ Socket recusado: {sock_err}")
+            print(f"⚠️ O Railway parece estar bloqueando a porta {port_int}. Isso é comum em planos Starter/Trial.")
             if port_int == 465:
-                print("💡 DICA: Tente a porta 587 se a 465 estiver bloqueada.")
+                print("💡 DICA: Tente a porta 587 (TLS).")
             elif port_int == 587:
-                 print("💡 DICA: Tente a porta 465 ou 2525.")
+                 print("💡 DICA: Tente a porta 2525 (se o seu provedor suportar).")
 
         # Real SMTP Connection
         if port_int == 465:
