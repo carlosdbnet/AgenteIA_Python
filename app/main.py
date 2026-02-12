@@ -19,7 +19,7 @@ app = FastAPI(title="Shopfono AI Bot Webhook")
 
 @app.get("/")
 def home():
-    return {"status": "online", "service": "Shopfono AI Bot"}
+    return {"status": "online", "service": "Shopfono AI Bot", "version": "1.0.4 - Fix JID"}
 
 @app.get("/cadastro", response_class=HTMLResponse)
 async def get_form():
@@ -69,12 +69,19 @@ async def post_form(
     
     # Notifica o cliente via WhatsApp se possível
     msg = f"Olá {nome}! Recebemos seu cadastro com sucesso. 📝✅\n\nNossa equipe em breve entrará em contato. Obrigado!"
+    print(f"📞 Iniciando notificação WhatsApp para {telefone}...")
     send_whatsapp_message(telefone, msg)
+    
+    # Envia o e-mail de confirmação
+    print(f"✉️ Iniciando envio de e-mail para {email}...")
+    from app.services.email_service import send_registration_email
+    send_registration_email(email, data)
+    print("✨ Processo de cadastro finalizado.")
     
     return HTMLResponse(content=f"""
         <div style="font-family: sans-serif; text-align: center; padding: 50px;">
             <h1 style="color: #6366f1;">Obrigado, {nome}!</h1>
-            <p>Seus dados foram enviados com sucesso.</p>
+            <p>Seus dados foram enviados com sucesso e uma confirmação foi enviada para {email}.</p>
             <a href="/cadastro" style="color: #6366f1; text-decoration: none; font-weight: bold;">Voltar</a>
         </div>
     """, status_code=200)

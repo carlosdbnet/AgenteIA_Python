@@ -32,14 +32,21 @@ def send_whatsapp_message(jid_str: str, text: str):
             jid_str = jid_str.strip().replace("+", "").replace(" ", "")
             jid_str = f"{jid_str}@s.whatsapp.net"
             
-        # Ensure we are using a JID object
-        target_jid = JID(jid_str)
+        # Parse JID components (protobuf JID doesn't allow positional args)
+        if "@" in jid_str:
+            user_part, server_part = jid_str.split("@")
+            target_jid = JID(User=user_part, Server=server_part)
+        else:
+            # Fallback if split fails
+            target_jid = JID(User=jid_str, Server="s.whatsapp.net")
         
-        whatsapp_client.send_message(target_jid, text)
+        whatsapp_client.send_message(to=target_jid, message=text)
         print(f"✅ Mensagem enviada para {jid_str}")
         return True
     except Exception as e:
         print(f"❌ Erro ao enviar mensagem para {jid_str}: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 def handle_message(client: NewClient, message: MessageEv):
@@ -159,7 +166,7 @@ def handle_message(client: NewClient, message: MessageEv):
                 client.reply_message(response_text, message)
             except Exception as e:
                 print(f"⚠️ Reply failed, attempting direct send: {e}")
-                client.send_message(message.Info.MessageSource.Chat, response_text)
+                client.send_message(to=message.Info.MessageSource.Chat, message=response_text)
             
             print(f"Sent: {response_text[:50]}...")
         
