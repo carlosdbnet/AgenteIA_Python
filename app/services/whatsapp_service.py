@@ -32,13 +32,27 @@ def send_whatsapp_message(jid_str: str, text: str):
             jid_str = jid_str.strip().replace("+", "").replace(" ", "")
             jid_str = f"{jid_str}@s.whatsapp.net"
             
-        # Parse JID components (protobuf JID doesn't allow positional args)
+        # Parse JID components (protobuf JID requires all fields explicitly)
         if "@" in jid_str:
             user_part, server_part = jid_str.split("@")
-            target_jid = JID(User=user_part, Server=server_part)
+            target_jid = JID(
+                User=user_part, 
+                Server=server_part,
+                RawAgent=0,
+                Device=0,
+                Integrator=0,
+                IsEmpty=False
+            )
         else:
             # Fallback if split fails
-            target_jid = JID(User=jid_str, Server="s.whatsapp.net")
+            target_jid = JID(
+                User=jid_str, 
+                Server="s.whatsapp.net",
+                RawAgent=0,
+                Device=0,
+                Integrator=0,
+                IsEmpty=False
+            )
         
         whatsapp_client.send_message(to=target_jid, message=text)
         print(f"✅ Mensagem enviada para {jid_str}")
