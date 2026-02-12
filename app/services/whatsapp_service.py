@@ -3,7 +3,7 @@ import time
 import base64
 from neonize.client import NewClient
 from neonize.events import MessageEv, ReceiptEv
-from neonize.utils.jid import Jid2String
+from neonize.utils.jid import Jid2String, JID
 from neonize.utils.enum import ChatPresence, ChatPresenceMedia
 from app.services.openai_service import generate_response, transcribe_audio, generate_image
 from app.utils.script_runner import run_script
@@ -17,10 +17,9 @@ whatsapp_client = None
 conversation_history = {}
 MAX_HISTORY = 10
 
-def send_whatsapp_message(jid: str, text: str):
+def send_whatsapp_message(jid_str: str, text: str):
     """
     Sends a message to a specific JID. 
-    If JID doesn't have the suffix, it adds @s.whatsapp.net
     """
     global whatsapp_client
     if not whatsapp_client:
@@ -29,22 +28,18 @@ def send_whatsapp_message(jid: str, text: str):
     
     try:
         # Simple JID formatting if it's just a phone number
-        if "@" not in jid:
-            jid = jid.strip().replace("+", "").replace(" ", "")
-            jid = f"{jid}@s.whatsapp.net"
+        if "@" not in jid_str:
+            jid_str = jid_str.strip().replace("+", "").replace(" ", "")
+            jid_str = f"{jid_str}@s.whatsapp.net"
             
-        from neonize.utils.jid import JID
-        # Convert string JID to JID object if needed by neonize (actually send_message takes JID object)
-        # But wait, Neonize's send_message often prefers JID objects.
-        # Let's check JID creation.
-        from neonize.utils.jid import Jid2String
-        # We need to import JID carefully
+        # Ensure we are using a JID object
+        target_jid = JID(jid_str)
         
-        whatsapp_client.send_message(jid, text)
-        print(f"✅ Mensagem enviada para {jid}")
+        whatsapp_client.send_message(target_jid, text)
+        print(f"✅ Mensagem enviada para {jid_str}")
         return True
     except Exception as e:
-        print(f"❌ Erro ao enviar mensagem: {e}")
+        print(f"❌ Erro ao enviar mensagem para {jid_str}: {e}")
         return False
 
 def handle_message(client: NewClient, message: MessageEv):
@@ -157,8 +152,15 @@ def handle_message(client: NewClient, message: MessageEv):
             if len(history) > MAX_HISTORY:
                 history.pop(0)
                 
-            # Send reply - Fixed argument order: (text, quoted_message)
-            client.reply_message(response_text, message)
+            # Send response using send_message if reply fails or as alternative
+            # Some JIDs (@lid) work better with direct send_message
+            try:
+                # First try reply
+                client.reply_message(response_text, message)
+            except Exception as e:
+                print(f"⚠️ Reply failed, attempting direct send: {e}")
+                client.send_message(message.Info.MessageSource.Chat, response_text)
+            
             print(f"Sent: {response_text[:50]}...")
         
         # Check for !image or !imagem prefix
