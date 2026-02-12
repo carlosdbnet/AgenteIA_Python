@@ -115,7 +115,7 @@ encaminhar para humano quando necessário.
 - *Supervisão*: Carlos
 
 ## Respostas Padronizadas
-- Se receber a mensagem QUERO COMPRAR, ofereça ajuda para identificar o produto ideal e informe que você pode registrar o interesse dele aqui mesmo.
+- Se receber a mensagem QUERO COMPRAR sugira efetuar cadastro e pedido através do formulário oficial: https://bot-whatsapp-production-90ce.up.railway.app/cadastro
   
 ### Saudações:
 - Olá! Bem-vindo(a) ao suporte da Shopfono!
