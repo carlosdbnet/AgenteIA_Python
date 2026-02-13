@@ -8,6 +8,7 @@ from neonize.utils.enum import ChatPresence, ChatPresenceMedia
 from app.services.openai_service import generate_response, transcribe_audio, generate_image
 from app.utils.script_runner import run_script
 from app.services.flow_service import process_flow
+from app.services import database
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -15,6 +16,7 @@ load_dotenv()
 # Global client to be accessed by other services (like webhooks)
 whatsapp_client = None
 conversation_history = {}
+registration_state = {}  # Track users in registration process
 MAX_HISTORY = 10
 
 def send_whatsapp_message(jid_str: str, text: str):
@@ -70,6 +72,12 @@ def handle_message(client: NewClient, message: MessageEv):
             return
 
         chat_id = Jid2String(message.Info.MessageSource.Chat)
+        
+        # Extract phone number from chat_id (format: 5544999849929@s.whatsapp.net)
+        phone = chat_id.split("@")[0] if "@" in chat_id else chat_id
+        
+        # Check if user exists in database
+        user = database.get_user_by_phone(phone)
         
         # Extract text from different message types
         text = ""
@@ -129,6 +137,68 @@ def handle_message(client: NewClient, message: MessageEv):
         
         if not text:
             return
+
+        # === USER REGISTRATION FLOW ===
+        # Handle registration process for new users
+        if phone in registration_state:
+            state = registration_state[phone]
+            
+            if state["step"] == "awaiting_name":
+                # User provided their name
+                proposed_name = text.strip()
+                registration_state[phone] = {
+                    "step": "awaiting_confirmation",
+                    "name": proposed_name
+                }
+                client.reply_message(
+                    f"Perfeito! Confirma que seu nome é *{proposed_name}*?\n\nResponda *SIM* para confirmar ou digite seu nome novamente.",
+                    message
+                )
+                return
+            
+            elif state["step"] == "awaiting_confirmation":
+                if text.strip().upper() in ["SIM", "S", "YES", "Y", "CONFIRMO"]:
+                    # Save user to database
+                    name = state["name"]
+                    database.create_user(phone, name)
+                    del registration_state[phone]
+                    
+                    client.reply_message(
+                        f"✅ Cadastro concluído com sucesso!\n\nOlá, *{name}*! É um prazer ter você aqui. Como posso ajudar?",
+                        message
+                    )
+                    return
+                else:
+                    # User wants to correct the name
+                    proposed_name = text.strip()
+                    registration_state[phone] = {
+                        "step": "awaiting_confirmation",
+                        "name": proposed_name
+                    }
+                    client.reply_message(
+                        f"Ok! Confirma que seu nome é *{proposed_name}*?\n\nResponda *SIM* para confirmar ou digite seu nome novamente.",
+                        message
+                    )
+                    return
+        
+        # Check if user is new (not in database and not in registration)
+        if not user and phone not in registration_state:
+            # Start registration process
+            registration_state[phone] = {"step": "awaiting_name"}
+            client.reply_message(
+                "👋 Olá! Vejo que é seu primeiro contato conosco.\n\n"
+                "Para melhor atendê-lo, por favor, me diga seu *nome*:",
+                message
+            )
+            return
+        
+        # Update last interaction for existing users
+        if user:
+            database.update_last_interaction(phone)
+            # Add user name to conversation context for personalization
+            user_name = user["name"]
+        
+        # === END USER REGISTRATION FLOW ===
 
         # 1. Process structured flow first (if not a command)
         is_command = text.startswith("!")
