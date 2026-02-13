@@ -3,8 +3,12 @@ openai
 python-dotenv
 # Dependências extras para processamento de imagem/áudio
 requests
-fastapi
-uvicorn
-pandas
-openpyxl
-python-multipart
+fastapi==0.115.6
+uvicorn==0.34.0
+openai==1.59.5
+python-dotenv==1.0.1
+requests==2.32.3
+openpyxl==3.1.5
+neonize==0.2.11
+sib-api-v3-sdk==7.6.0
+psycopg2-binary==2.9.10
