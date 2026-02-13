@@ -9,7 +9,9 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 def get_connection():
     """Create and return a PostgreSQL connection."""
     if not DATABASE_URL:
+        print("❌ [DB] DATABASE_URL environment variable not set!")
         raise ValueError("DATABASE_URL environment variable not set")
+    print(f"🔵 [DB] Connecting to PostgreSQL...")
     return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
 
 def init_db():
@@ -59,6 +61,7 @@ def init_db():
 
 def get_user_by_phone(phone):
     """Get user by phone number."""
+    print(f"🔍 [DB] Looking up user by phone: {phone}")
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -68,15 +71,26 @@ def get_user_by_phone(phone):
         
         cursor.close()
         conn.close()
+        
+        if user:
+            print(f"✅ [DB] User found: {user['name']} (ID: {user['id']})")
+        else:
+            print(f"❌ [DB] User NOT found for phone: {phone}")
+        
         return user
     except Exception as e:
-        print(f"Error getting user: {e}")
+        print(f"❌ [DB] CRITICAL ERROR getting user: {e}")
+        print(f"❌ [DB] Error type: {type(e).__name__}")
+        import traceback
+        traceback.print_exc()
         return None
 
 def create_user(phone, name):
     """Create a new user."""
+    print(f"🔵 [DB] Attempting to create user: {name} ({phone})")
     try:
         conn = get_connection()
+        print(f"🔵 [DB] Connection established successfully")
         cursor = conn.cursor()
         
         cursor.execute(
@@ -89,13 +103,16 @@ def create_user(phone, name):
         cursor.close()
         conn.close()
         
-        print(f"✅ User created: {name} ({phone})")
+        print(f"✅ [DB] User created successfully: {name} ({phone}) - ID: {user_id}")
         return user_id
-    except psycopg2.IntegrityError:
-        print(f"⚠️ User already exists: {phone}")
+    except psycopg2.IntegrityError as e:
+        print(f"⚠️ [DB] User already exists: {phone} - {e}")
         return None
     except Exception as e:
-        print(f"❌ Error creating user: {e}")
+        print(f"❌ [DB] CRITICAL ERROR creating user: {e}")
+        print(f"❌ [DB] Error type: {type(e).__name__}")
+        import traceback
+        traceback.print_exc()
         return None
 
 def update_last_interaction(phone):
