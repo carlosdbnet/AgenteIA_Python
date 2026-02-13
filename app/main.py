@@ -19,7 +19,7 @@ app = FastAPI(title="Shopfono AI Bot Webhook")
 
 @app.get("/")
 def home():
-    return {"status": "online", "service": "Shopfono AI Bot", "version": "1.5.0 - Form to PostgreSQL"}
+    return {"status": "online", "service": "Shopfono AI Bot", "version": "1.5.1 - Admin Panel"}
 
 @app.get("/cadastro", response_class=HTMLResponse)
 async def get_form():
@@ -110,6 +110,154 @@ async def post_form(
             <p>Seus dados foram enviados com sucesso e uma confirmação foi enviada para {email}.</p>
             <a href="/cadastro" style="color: #6366f1; text-decoration: none; font-weight: bold;">Voltar</a>
         </div>
+    """, status_code=200)
+
+@app.get("/admin/registrations", response_class=HTMLResponse)
+async def view_registrations():
+    """Admin endpoint to view all registrations from PostgreSQL."""
+    from app.services import database
+    
+    registrations = database.get_all_registrations()
+    
+    # Build HTML table
+    rows_html = ""
+    for reg in registrations:
+        rows_html += f"""
+        <tr>
+            <td>{reg['id']}</td>
+            <td>{reg['nome']}</td>
+            <td>{reg['email']}</td>
+            <td>{reg['telefone']}</td>
+            <td>{reg['whatsapp'] or '-'}</td>
+            <td>{reg['cep'] or '-'}</td>
+            <td>{reg['endereco'] or '-'}</td>
+            <td>{reg['numero'] or '-'}</td>
+            <td>{reg['complemento'] or '-'}</td>
+            <td>{reg['bairro'] or '-'}</td>
+            <td>{reg['cidade'] or '-'}</td>
+            <td>{reg['estado'] or '-'}</td>
+            <td>{reg['genero'] or '-'}</td>
+            <td>{reg['cpf_cnpj'] or '-'}</td>
+            <td>{reg['created_at'].strftime('%d/%m/%Y %H:%M') if reg['created_at'] else '-'}</td>
+        </tr>
+        """
+    
+    total = len(registrations)
+    
+    return HTMLResponse(content=f"""
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Admin - Cadastros</title>
+        <style>
+            * {{
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }}
+            body {{
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                padding: 20px;
+            }}
+            .container {{
+                max-width: 1400px;
+                margin: 0 auto;
+                background: white;
+                border-radius: 12px;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+                overflow: hidden;
+            }}
+            .header {{
+                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+                color: white;
+                padding: 30px;
+                text-align: center;
+            }}
+            .header h1 {{
+                font-size: 2rem;
+                margin-bottom: 10px;
+            }}
+            .stats {{
+                background: rgba(255,255,255,0.1);
+                padding: 15px;
+                border-radius: 8px;
+                margin-top: 15px;
+                display: inline-block;
+            }}
+            .stats span {{
+                font-size: 1.5rem;
+                font-weight: bold;
+            }}
+            .table-container {{
+                overflow-x: auto;
+                padding: 20px;
+            }}
+            table {{
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 0.9rem;
+            }}
+            th {{
+                background: #6366f1;
+                color: white;
+                padding: 12px 8px;
+                text-align: left;
+                font-weight: 600;
+                position: sticky;
+                top: 0;
+                z-index: 10;
+            }}
+            td {{
+                padding: 10px 8px;
+                border-bottom: 1px solid #e5e7eb;
+            }}
+            tr:hover {{
+                background: #f3f4f6;
+            }}
+            tr:nth-child(even) {{
+                background: #f9fafb;
+            }}
+            tr:nth-child(even):hover {{
+                background: #f3f4f6;
+            }}
+            .empty {{
+                text-align: center;
+                padding: 60px 20px;
+                color: #6b7280;
+            }}
+            .empty h2 {{
+                font-size: 1.5rem;
+                margin-bottom: 10px;
+            }}
+            .footer {{
+                text-align: center;
+                padding: 20px;
+                color: #6b7280;
+                font-size: 0.9rem;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>📋 Cadastros Registrados</h1>
+                <div class="stats">
+                    Total de cadastros: <span>{total}</span>
+                </div>
+            </div>
+            
+            {"<div class='table-container'><table><thead><tr><th>ID</th><th>Nome</th><th>Email</th><th>Telefone</th><th>WhatsApp</th><th>CEP</th><th>Endereço</th><th>Número</th><th>Complemento</th><th>Bairro</th><th>Cidade</th><th>Estado</th><th>Gênero</th><th>CPF/CNPJ</th><th>Data Cadastro</th></tr></thead><tbody>" + rows_html + "</tbody></table></div>" if total > 0 else "<div class='empty'><h2>Nenhum cadastro encontrado</h2><p>Os cadastros aparecerão aqui assim que forem enviados pelo formulário.</p></div>"}
+            
+            <div class="footer">
+                Shopfono AI Bot v1.5.0 - Admin Panel
+            </div>
+        </div>
+    </body>
+    </html>
     """, status_code=200)
 
 
