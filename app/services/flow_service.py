@@ -40,24 +40,6 @@ def update_user_state(chat_id, state, data=None):
     
     save_states(states)
 
-def get_flow_message(tag, default):
-    """
-    Extracts a dynamic message from system_prompt.txt based on a tag like [SAUDACAO].
-    """
-    prompt_file = os.getenv("SYSTEM_PROMPT_FILE") or "system_prompt.txt"
-    if os.path.exists(prompt_file):
-        try:
-            with open(prompt_file, "r", encoding="utf-8") as f:
-                for line in f:
-                    clean_line = line.strip()
-                    if clean_line.startswith(f"[{tag}]"):
-                        msg = clean_line.replace(f"[{tag}]", "").strip()
-                        # Replace literal \n with actual newlines
-                        return msg.replace("\\n", "\n")
-        except Exception as e:
-            print(f"Error reading flow message from file: {e}")
-    return default
-
 def process_flow(chat_id, text):
     """
     Manages the conversation flow logic.
@@ -76,10 +58,9 @@ def process_flow(chat_id, text):
     if text.lower() in ["reiniciar", "reset", "menu"]:
         update_user_state(chat_id, UserState.START, {})
         if db_user:
-            msg = f"🔄 Fluxo reiniciado!\n\nOlá, *{db_user['name']}*! Como posso ajudar?"
+            return f"🔄 Fluxo reiniciado!\n\nOlá, *{db_user['name']}*! Como posso ajudar?", True
         else:
-            msg = get_flow_message("SAUDACAO", "🔄 Fluxo reiniciado!\n\nOlá! Bem-vindo(a) à Shopfono! ✨")
-        return msg, True
+            return "🔄 Fluxo reiniciado!\n\nOlá! Bem-vindo(a) à Shopfono! ✨", True
 
     if state == UserState.START:
         # Check if user is already registered in database
@@ -90,15 +71,13 @@ def process_flow(chat_id, text):
         else:
             # New user, collect name
             update_user_state(chat_id, UserState.COLLECTING_NAME)
-            return get_flow_message("SAUDACAO", "Olá! Bem-vindo(a) à Shopfono! ✨") + "\n\n" + \
-                   get_flow_message("PEDIR_NOME", "Eu sou sua assistente virtual. Para começarmos, como posso te chamar?"), True
+            return "Olá! Bem-vindo(a) à Shopfono! ✨\n\nEu sou sua assistente virtual. Para começarmos, como posso te chamar?", True
 
     elif state == UserState.COLLECTING_NAME:
         name = text.strip()
         # Skip interest collection, go directly to FREE_CHAT
         update_user_state(chat_id, UserState.FREE_CHAT, {"name": name})
-        msg = get_flow_message("MENSAGEM_FINAL", "Prazer em te conhecer, {name}! 😊\n\nComo posso te ajudar especificamente agora? Pode me perguntar qualquer coisa!")
-        return msg.format(name=name), True
+        return f"Prazer em te conhecer, *{name}*! 😊\n\nComo posso te ajudar especificamente agora? Pode me perguntar qualquer coisa!", True
 
     # If state is FREE_CHAT, we return None to let the main handler use OpenAI
     return None, False
