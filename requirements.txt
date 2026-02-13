@@ -1,4 +1,4 @@
-neonize==0.2.11
+neonize==0.3.14.post0
 openai==1.59.5
 python-dotenv==1.0.1
 requests==2.32.3
