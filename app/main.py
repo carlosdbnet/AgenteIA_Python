@@ -19,7 +19,7 @@ app = FastAPI(title="Shopfono AI Bot Webhook")
 
 @app.get("/")
 def home():
-    return {"status": "online", "service": "Shopfono AI Bot", "version": "1.4.0 - PostgreSQL"}
+    return {"status": "online", "service": "Shopfono AI Bot", "version": "1.5.0 - Form to PostgreSQL"}
 
 @app.get("/cadastro", response_class=HTMLResponse)
 async def get_form():
@@ -46,7 +46,35 @@ async def post_form(
     cidade: str = Form(...),
     uf: str = Form(...)
 ):
+    # Prepara os dados do formulário para o banco de dados
+    # Note: 'whatsapp', 'endereco', 'complemento' are not directly from form,
+    # using 'telefone' for whatsapp and combining 'rua_av' for 'endereco'.
     data = {
+        "nome": nome,
+        "email": email,
+        "telefone": telefone,
+        "whatsapp": telefone, # Assuming whatsapp is the same as telefone for now
+        "cep": cep,
+        "endereco": f"{rua_av}, {numero}", # Combining rua_av and numero for endereco
+        "complemento": "", # No direct form field for complemento
+        "numero": numero,
+        "bairro": bairro,
+        "cidade": cidade,
+        "estado": uf,
+        "genero": genero,
+        "cpf_cnpj": cpf_cnpj
+    }
+    
+    # Salva no PostgreSQL
+    print(f"💾 Salvando cadastro no banco de dados...")
+    from app.services import database
+    registration_id = database.create_registration(data)
+    
+    if not registration_id:
+        print("⚠️ Falha ao salvar no banco de dados, mas continuando com email...")
+    
+    # Prepara os dados para o Excel (mantido para compatibilidade)
+    data_excel = {
         "Pessoa": pessoa,
         "Nome": nome,
         "Sobrenome": sobrenome,
@@ -62,9 +90,7 @@ async def post_form(
         "Cidade": cidade,
         "UF": uf
     }
-    
-    # Salva no Excel via script
-    data_str = json.dumps(data)
+    data_str = json.dumps(data_excel)
     run_script("save_to_excel", [data_str])
     
     # Notifica o cliente via WhatsApp se possível
@@ -75,7 +101,7 @@ async def post_form(
     # Envia o e-mail de confirmação
     print(f"✉️ Iniciando envio de e-mail para {email}...")
     from app.services.email_service import send_registration_email
-    send_registration_email(email, data)
+    send_registration_email(email, data_excel)
     print("✨ Processo de cadastro finalizado.")
     
     return HTMLResponse(content=f"""

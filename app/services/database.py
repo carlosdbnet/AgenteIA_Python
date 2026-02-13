@@ -29,10 +29,31 @@ def init_db():
             )
         """)
         
+        # Create registrations table for form submissions
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS registrations (
+                id SERIAL PRIMARY KEY,
+                nome VARCHAR(255) NOT NULL,
+                email VARCHAR(255) NOT NULL,
+                telefone VARCHAR(20) NOT NULL,
+                whatsapp VARCHAR(20),
+                cep VARCHAR(10),
+                endereco VARCHAR(255),
+                numero VARCHAR(20),
+                complemento VARCHAR(255),
+                bairro VARCHAR(100),
+                cidade VARCHAR(100),
+                estado VARCHAR(2),
+                genero VARCHAR(50),
+                cpf_cnpj VARCHAR(20),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
         conn.commit()
         cursor.close()
         conn.close()
-        print("✅ PostgreSQL database initialized successfully")
+        print("✅ PostgreSQL database initialized successfully (users + registrations tables)")
     except Exception as e:
         print(f"❌ Error initializing database: {e}")
 
@@ -108,6 +129,64 @@ def get_all_users():
         return users
     except Exception as e:
         print(f"Error getting all users: {e}")
+        return []
+
+# ===== REGISTRATION FORM FUNCTIONS =====
+
+def create_registration(data):
+    """Create a new registration from form data."""
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            INSERT INTO registrations 
+            (nome, email, telefone, whatsapp, cep, endereco, numero, complemento, 
+             bairro, cidade, estado, genero, cpf_cnpj)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id
+        """, (
+            data.get('nome'),
+            data.get('email'),
+            data.get('telefone'),
+            data.get('whatsapp'),
+            data.get('cep'),
+            data.get('endereco'),
+            data.get('numero'),
+            data.get('complemento'),
+            data.get('bairro'),
+            data.get('cidade'),
+            data.get('estado'),
+            data.get('genero'),
+            data.get('cpf_cnpj')
+        ))
+        
+        registration_id = cursor.fetchone()['id']
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        print(f"✅ Registration saved to database: {data.get('nome')} (ID: {registration_id})")
+        return registration_id
+    except Exception as e:
+        print(f"❌ Error saving registration: {e}")
+        return None
+
+def get_all_registrations():
+    """Get all registrations (for admin purposes)."""
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("SELECT * FROM registrations ORDER BY created_at DESC")
+        registrations = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        return registrations
+    except Exception as e:
+        print(f"Error getting all registrations: {e}")
         return []
 
 # Initialize database on module import
