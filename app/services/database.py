@@ -3,8 +3,10 @@ import os
 from datetime import datetime
 from pathlib import Path
 
-# Database path - use /data for Railway persistent volume, fallback to local
-DB_DIR = os.getenv("DB_PATH", "./data")
+# Database path - Railway free tier uses ephemeral storage
+# WARNING: Data will be lost on redeploys in Railway free tier
+# For production, consider upgrading to Railway Pro with volumes or use PostgreSQL
+DB_DIR = os.getenv("DB_PATH", ".")  # Use current directory for Railway free
 Path(DB_DIR).mkdir(parents=True, exist_ok=True)
 DB_PATH = os.path.join(DB_DIR, "users.db")
 
