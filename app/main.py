@@ -23,7 +23,7 @@ app = FastAPI(title="Shopfono AI Bot Webhook")
 
 @app.get("/")
 def home():
-    return {"status": "online", "service": "Shopfono AI Bot", "version": "1.5.2 - Debug Logging"}
+    return {"status": "online", "service": "Shopfono AI Bot", "version": "1.5.3 - Admin Acessos"}
 
 @app.get("/cadastro", response_class=HTMLResponse)
 async def get_form():
@@ -257,7 +257,148 @@ async def view_registrations():
             {"<div class='table-container'><table><thead><tr><th>ID</th><th>Nome</th><th>Email</th><th>Telefone</th><th>WhatsApp</th><th>CEP</th><th>Endereço</th><th>Número</th><th>Complemento</th><th>Bairro</th><th>Cidade</th><th>Estado</th><th>Gênero</th><th>CPF/CNPJ</th><th>Data Cadastro</th></tr></thead><tbody>" + rows_html + "</tbody></table></div>" if total > 0 else "<div class='empty'><h2>Nenhum cadastro encontrado</h2><p>Os cadastros aparecerão aqui assim que forem enviados pelo formulário.</p></div>"}
             
             <div class="footer">
-                Shopfono AI Bot v1.5.0 - Admin Panel
+                Shopfono AI Bot v1.5.3 - Admin Panel
+            </div>
+        </div>
+    </body>
+    </html>
+    """, status_code=200)
+
+@app.get("/admin/registration", response_class=HTMLResponse)
+async def view_registration_alias():
+    """Alias for /admin/registrations (singular)."""
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/admin/registrations")
+
+@app.get("/admin/users", response_class=HTMLResponse)
+async def view_users():
+    """Admin endpoint to view all WhatsApp users from PostgreSQL."""
+    from app.services import database
+    
+    users = database.get_all_users()
+    
+    # Build HTML table
+    rows_html = ""
+    for user in users:
+        rows_html += f"""
+        <tr>
+            <td>{user['id']}</td>
+            <td>{user['phone']}</td>
+            <td>{user['name']}</td>
+            <td>{user['created_at'].strftime('%d/%m/%Y %H:%M') if user['created_at'] else '-'}</td>
+            <td>{user['last_interaction'].strftime('%d/%m/%Y %H:%M') if user['last_interaction'] else '-'}</td>
+        </tr>
+        """
+    
+    total = len(users)
+    
+    return HTMLResponse(content=f"""
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Admin - Acessos WhatsApp</title>
+        <style>
+            * {{
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }}
+            body {{
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+                min-height: 100vh;
+                padding: 20px;
+            }}
+            .container {{
+                max-width: 1000px;
+                margin: 0 auto;
+                background: white;
+                border-radius: 12px;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+                overflow: hidden;
+            }}
+            .header {{
+                background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+                color: white;
+                padding: 30px;
+                text-align: center;
+            }}
+            .header h1 {{
+                font-size: 2rem;
+                margin-bottom: 10px;
+            }}
+            .stats {{
+                background: rgba(255,255,255,0.1);
+                padding: 15px;
+                border-radius: 8px;
+                margin-top: 15px;
+                display: inline-block;
+            }}
+            .stats span {{
+                font-size: 1.5rem;
+                font-weight: bold;
+            }}
+            .table-container {{
+                overflow-x: auto;
+                padding: 20px;
+            }}
+            table {{
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 0.9rem;
+            }}
+            th {{
+                background: #3b82f6;
+                color: white;
+                padding: 12px 15px;
+                text-align: left;
+                font-weight: 600;
+            }}
+            td {{
+                padding: 12px 15px;
+                border-bottom: 1px solid #e5e7eb;
+            }}
+            tr:hover {{
+                background: #f3f4f6;
+            }}
+            .footer {{
+                text-align: center;
+                padding: 20px;
+                color: #6b7280;
+                font-size: 0.9rem;
+            }}
+            .nav {{
+                padding: 10px 20px;
+                background: #f8fafc;
+                border-bottom: 1px solid #e2e8f0;
+                text-align: right;
+            }}
+            .nav a {{
+                color: #3b82f6;
+                text-decoration: none;
+                font-weight: 600;
+                font-size: 0.9rem;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="nav">
+                <a href="/admin/registrations">Ir para Cadastros →</a>
+            </div>
+            <div class="header">
+                <h1>📱 Acessos WhatsApp</h1>
+                <div class="stats">
+                    Total de usuários: <span>{total}</span>
+                </div>
+            </div>
+            
+            {"<div class='table-container'><table><thead><tr><th>ID</th><th>Telefone</th><th>Nome</th><th>Primeiro Acesso</th><th>Última Interação</th></tr></thead><tbody>" + rows_html + "</tbody></table></div>" if total > 0 else "<div class='empty'><h2>Nenhum acesso encontrado</h2></div>"}
+            
+            <div class="footer">
+                Shopfono AI Bot v1.5.3 - Admin Panel
             </div>
         </div>
     </body>
