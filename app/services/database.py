@@ -2,17 +2,26 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import os
 from datetime import datetime
+from dotenv import load_dotenv
+
+# Force load .env to ensure DATABASE_URL is available even if imported early
+load_dotenv()
 
 # PostgreSQL connection using DATABASE_URL from Railway
-DATABASE_URL = os.getenv("DATABASE_URL")
+# We will fetch it dynamically in get_connection to be safe, but keep a module level default for init
+_DATABASE_URL = os.getenv("DATABASE_URL")
 
 def get_connection():
     """Create and return a PostgreSQL connection."""
-    if not DATABASE_URL:
+    # Re-fetch or use cached
+    db_url = os.getenv("DATABASE_URL")
+    
+    if not db_url:
         print("❌ [DB] DATABASE_URL environment variable not set!")
         raise ValueError("DATABASE_URL environment variable not set")
+        
     print(f"🔵 [DB] Connecting to PostgreSQL...")
-    return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+    return psycopg2.connect(db_url, cursor_factory=RealDictCursor)
 
 def init_db():
     """Initialize the database and create tables if they don't exist."""

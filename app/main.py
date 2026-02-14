@@ -10,6 +10,10 @@ project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if project_root not in sys.path:
     sys.path.append(project_root)
 
+# Carrega variáveis de ambiente do arquivo .env
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse
 from app.services.whatsapp_service import start_whatsapp, send_whatsapp_message

@@ -76,6 +76,8 @@ def handle_message(client: NewClient, message: MessageEv):
         # Extract phone number from chat_id (format: 5544999849929@s.whatsapp.net)
         phone = chat_id.split("@")[0] if "@" in chat_id else chat_id
         
+        print(f"📩 [MSG] Processing message from: {chat_id} (Phone extracted: {phone})")
+
         # Check if user exists in database
         user = database.get_user_by_phone(phone)
         
@@ -160,13 +162,21 @@ def handle_message(client: NewClient, message: MessageEv):
                 if text.strip().upper() in ["SIM", "S", "YES", "Y", "CONFIRMO"]:
                     # Save user to database
                     name = state["name"]
-                    database.create_user(phone, name)
-                    del registration_state[phone]
+                    user_id = database.create_user(phone, name)
                     
-                    client.reply_message(
-                        f"✅ Cadastro concluído com sucesso!\n\nOlá, *{name}*! É um prazer ter você aqui. Como posso ajudar?",
-                        message
-                    )
+                    if user_id:
+                        del registration_state[phone]
+                        client.reply_message(
+                            f"✅ Cadastro concluído com sucesso!\n\nOlá, *{name}*! É um prazer ter você aqui. Como posso ajudar?",
+                            message
+                        )
+                    else:
+                        client.reply_message(
+                            "❌ Ocorreu um erro ao salvar seu cadastro no banco de dados. Por favor, tente confirmar novamente ou digite seu nome novamente.",
+                            message
+                        )
+                        # Keep state as awaiting_confirmation or reset to awaiting_name? 
+                        # Letting them retry confirmation is valid if it was a transient DB error.
                     return
                 else:
                     # User wants to correct the name
