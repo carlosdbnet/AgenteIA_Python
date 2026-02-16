@@ -18,8 +18,16 @@ from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse
 from app.services.whatsapp_service import start_whatsapp, send_whatsapp_message
 from app.utils.script_runner import run_script
+from fastapi.staticfiles import StaticFiles
+from app.scripts.generate_charts import generate_charts
 
 app = FastAPI(title="Shopfono AI Bot Webhook")
+
+# Mount charts directory to serve static files
+charts_path = os.path.join(project_root, "app", "charts")
+if not os.path.exists(charts_path):
+    os.makedirs(charts_path)
+app.mount("/charts", StaticFiles(directory=charts_path), name="charts")
 
 @app.get("/")
 def home():
@@ -158,6 +166,13 @@ async def view_registrations():
     
     registrations = database.get_all_registrations()
     
+    # Generate charts removed from here, moving to dedicated page
+    # from app.scripts.generate_charts import generate_charts
+    # try:
+    #     generate_charts()
+    # except Exception as e:
+    #     print(f"Error refreshing charts: {e}")
+    
     # Build HTML table
     rows_html = ""
     for reg in registrations:
@@ -288,6 +303,8 @@ async def view_registrations():
                     Total de cadastros: <span>{total}</span>
                 </div>
             </div>
+            
+
             
             {"<div class='table-container'><table><thead><tr><th>ID</th><th>Nome</th><th>Email</th><th>Telefone</th><th>WhatsApp</th><th>CEP</th><th>Endereço</th><th>Número</th><th>Complemento</th><th>Bairro</th><th>Cidade</th><th>Estado</th><th>Gênero</th><th>CPF/CNPJ</th><th>Data Cadastro</th></tr></thead><tbody>" + rows_html + "</tbody></table></div>" if total > 0 else "<div class='empty'><h2>Nenhum cadastro encontrado</h2><p>Os cadastros aparecerão aqui assim que forem enviados pelo formulário.</p></div>"}
             
@@ -421,7 +438,8 @@ async def view_users():
     <body>
         <div class="container">
             <div class="nav">
-                <a href="/admin/registrations">Ir para Cadastros →</a>
+                <a href="/admin/registrations" style="margin-right: 15px;">Ir para Cadastros</a>
+                <a href="/admin/charts" style="background: #2563eb; color: white; padding: 8px 16px; border-radius: 6px;">IR PARA GRÁFICO 📊</a>
             </div>
             <div class="header">
                 <h1>📱 Acessos WhatsApp</h1>
@@ -447,6 +465,133 @@ def run_bot():
         start_whatsapp()
     except Exception as e:
         print(f"Fatal Error in WhatsApp Client: {e}")
+
+@app.get("/admin/charts", response_class=HTMLResponse)
+async def view_charts():
+    """Admin endpoint to view analytics charts."""
+    
+    # Generate charts on page load
+    try:
+        generate_charts()
+    except Exception as e:
+        print(f"Error refreshing charts: {e}")
+    
+    return HTMLResponse(content=f"""
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Admin - Gráficos</title>
+        <style>
+            * {{
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }}
+            body {{
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background: linear-gradient(135deg, #f0fdf4 0%, #15803d 100%);
+                min-height: 100vh;
+                padding: 20px;
+            }}
+            .container {{
+                max-width: 1400px;
+                margin: 0 auto;
+                background: white;
+                border-radius: 12px;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+                overflow: hidden;
+            }}
+            .header {{
+                background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+                color: white;
+                padding: 30px;
+                text-align: center;
+                position: relative;
+            }}
+            .header h1 {{
+                font-size: 2rem;
+                margin-bottom: 10px;
+            }}
+            .back-btn {{
+                position: absolute;
+                left: 20px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: white;
+                text-decoration: none;
+                font-weight: bold;
+                border: 2px solid white;
+                padding: 8px 16px;
+                border-radius: 6px;
+                transition: background 0.2s;
+            }}
+            .back-btn:hover {{
+                background: rgba(255,255,255,0.2);
+            }}
+            .charts-container {{
+                display: flex; 
+                flex-wrap: wrap; 
+                justify-content: center; 
+                gap: 30px; 
+                margin: 40px 20px;
+            }}
+            .chart-card {{
+                background: white; 
+                padding: 20px; 
+                border-radius: 12px; 
+                box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+                transition: transform 0.2s;
+            }}
+            .chart-card:hover {{
+                transform: translateY(-5px);
+            }}
+            .chart-card h3 {{
+                text-align: center; 
+                color: #374151; 
+                margin-bottom: 15px;
+                font-size: 1.2rem;
+            }}
+            .chart-card img {{
+                max-width: 100%; 
+                height: auto; 
+                max-height: 500px;
+                border-radius: 8px;
+            }}
+            .footer {{
+                text-align: center;
+                padding: 20px;
+                color: #6b7280;
+                font-size: 0.9rem;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <a href="/admin/users" class="back-btn">← Voltar para Usuários</a>
+                <h1>📊 Gráficos de Análise</h1>
+            </div>
+            
+            <div class="charts-container">
+                <div class="chart-card">
+                    <h3>Distribuição de Usuários</h3>
+                    <img src="/charts/grafico_pizza_usuarios.png" alt="Gráfico de Pizza">
+                </div>
+                <div class="chart-card">
+                    <h3>Top Nomes em Cadastros</h3>
+                    <img src="/charts/grafico_barra_cadastros.png" alt="Gráfico de Barra">
+                </div>
+            </div>
+            
+            <div class="footer">
+                Shopfono AI Bot v1.5.3 - Admin Panel
+            </div>
+        </div>
+    </body>
+    </html>
+    """, status_code=200)
 
 if __name__ == "__main__":
     # Inicia o WhatsApp em uma thread separada para não travar o FastAPI
