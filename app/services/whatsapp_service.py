@@ -312,6 +312,23 @@ def start_whatsapp():
     # Business data (users, registrations) is stored in Postgres.
     whatsapp_client = NewClient("neonize_session.db")
     
+    # Custom QR Callback to improve readability in logs
+    def qr_callback(client: NewClient, data: bytes):
+        try:
+            import segno
+            qr = segno.make_qr(data)
+            print("\n" + "="*50)
+            print(">>> SCAN THIS QR CODE TO LOGIN <<<")
+            print("="*50 + "\n")
+            # Print with different borders/scales to help readability
+            qr.terminal(compact=True, border=2)
+            print("\n" + "="*50 + "\n")
+        except Exception as e:
+            print(f"Error generating QR: {e}")
+
+    # Register the callback
+    whatsapp_client.event.qr(qr_callback)
+
     @whatsapp_client.event(MessageEv)
     def on_message(client: NewClient, message: MessageEv):
         handle_message(client, message)
