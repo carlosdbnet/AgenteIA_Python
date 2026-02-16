@@ -112,10 +112,15 @@
             box-shadow: 0 0 0 4px var(--input-focus);
         }
 
-        .btn-submit {
+        .button-group {
             grid-column: span 2;
-            background-color: var(--primary);
-            color: white;
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .btn {
+            flex: 1;
             padding: 16px;
             border: none;
             border-radius: 12px;
@@ -123,7 +128,11 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
-            margin-top: 10px;
+        }
+
+        .btn-submit {
+            background-color: var(--primary);
+            color: white;
         }
 
         .btn-submit:hover {
@@ -132,7 +141,17 @@
             box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
         }
 
-        .btn-submit:active {
+        .btn-clear {
+            background-color: var(--border);
+            color: var(--text);
+        }
+
+        .btn-clear:hover {
+            background-color: #cbd5e1;
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
             transform: translateY(0);
         }
 
@@ -145,8 +164,9 @@
                 grid-column: span 1;
             }
 
-            .btn-submit {
+            .button-group {
                 grid-column: span 1;
+                flex-direction: column;
             }
         }
 
@@ -310,7 +330,10 @@
                 <label for="uf">UF</label>
                 <input type="text" name="uf" id="uf" placeholder="Estado (ex: SP)" maxlength="2" required>
             </div>
-            <button type="submit" class="btn-submit">Enviar Cadastro</button>
+            <div class="button-group">
+                <button type="button" class="btn btn-clear" id="btnClear">Limpar</button>
+                <button type="submit" class="btn btn-submit">Enviar Cadastro</button>
+            </div>
         </form>
     </div>
 
@@ -318,9 +341,17 @@
         const cepInput = document.getElementById('cep');
         const btnSearchCep = document.getElementById('btnSearchCep');
         const cepMessage = document.getElementById('cepMessage');
+        const btnClear = document.getElementById('btnClear');
         const searchIcon = btnSearchCep.querySelector('.search-icon');
         const searchText = btnSearchCep.querySelector('.search-text');
         const loadingSpinner = btnSearchCep.querySelector('.loading-spinner');
+
+        // Clear form fields
+        btnClear.addEventListener('click', function () {
+            document.querySelector('form').reset();
+            cepMessage.textContent = '';
+            cepMessage.className = 'cep-message';
+        });
 
         // Auto-format CEP as user types
         cepInput.addEventListener('input', function (e) {
