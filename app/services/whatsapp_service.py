@@ -15,6 +15,7 @@ load_dotenv()
 
 # Global client to be accessed by other services (like webhooks)
 whatsapp_client = None
+latest_qr_data = None
 conversation_history = {}
 registration_state = {}  # Track users in registration process
 MAX_HISTORY = 10
@@ -312,8 +313,9 @@ def start_whatsapp():
     # Business data (users, registrations) is stored in Postgres.
     whatsapp_client = NewClient("neonize_session.db")
     
-    # Custom QR Callback to improve readability in logs
+    # Custom QR Callback to improve readability in logs and save for web
     def qr_callback(client: NewClient, data: bytes):
+        global latest_qr_data
         try:
             import segno
             qr = segno.make_qr(data)
@@ -323,6 +325,9 @@ def start_whatsapp():
             # Print with different borders/scales to help readability
             qr.terminal(compact=True, border=2)
             print("\n" + "="*50 + "\n")
+            
+            # Store for web endpoint
+            latest_qr_data = data
         except Exception as e:
             print(f"Error generating QR: {e}")
 
@@ -335,3 +340,19 @@ def start_whatsapp():
 
     print("Scan the QR code to connect...")
     whatsapp_client.connect()
+
+def get_latest_qr():
+    """Returns the latest QR code data URI or None."""
+    global latest_qr_data
+    if not latest_qr_data:
+        return None
+    try:
+        import segno
+        import io
+        qr = segno.make_qr(latest_qr_data)
+        out = io.BytesIO()
+        qr.save(out, kind='png', scale=10)
+        return out.getvalue()
+    except Exception as e:
+        print(f"Error generating QR image: {e}")
+        return None

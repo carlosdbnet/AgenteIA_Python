@@ -116,6 +116,41 @@ async def post_form(
         </div>
     """, status_code=200)
 
+@app.get("/qr", response_class=HTMLResponse)
+async def get_qr_code():
+    """Endpoint to view the latest WhatsApp QR code."""
+    from app.services.whatsapp_service import get_latest_qr
+    import base64
+    
+    qr_data = get_latest_qr()
+    
+    if not qr_data:
+        content = """
+        <div style="font-family: sans-serif; text-align: center; padding: 50px;">
+            <h1 style="color: #6366f1;">Aguardando QR Code...</h1>
+            <p>O código ainda não foi gerado ou o bot já está conectado.</p>
+            <script>setTimeout(function(){ location.reload(); }, 3000);</script>
+        </div>
+        """
+    else:
+        # qr_data is bytes (png image from get_latest_qr)
+        b64_img = base64.b64encode(qr_data).decode('utf-8')
+        content = f"""
+        <html>
+        <head><title>WhatsApp QR Code</title></head>
+        <body>
+        <div style="font-family: sans-serif; text-align: center; padding: 50px;">
+            <h1 style="color: #6366f1;">Escaneie para Conectar</h1>
+            <img src="data:image/png;base64,{b64_img}" alt="QR Code" style="border: 2px solid #ccc; padding: 10px; border-radius: 10px;">
+            <p>Atualiza automaticamente a cada 5 segundos.</p>
+            <script>setTimeout(function(){{ location.reload(); }}, 5000);</script>
+        </div>
+        </body>
+        </html>
+        """
+    
+    return HTMLResponse(content=content, status_code=200)
+
 @app.get("/admin/registrations", response_class=HTMLResponse)
 async def view_registrations():
     """Admin endpoint to view all registrations from PostgreSQL."""
