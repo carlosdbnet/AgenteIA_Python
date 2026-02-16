@@ -307,8 +307,10 @@ def handle_message(client: NewClient, message: MessageEv):
 def start_whatsapp():
     global whatsapp_client
     print("Starting WhatsApp Client (Neonize)...")
-    # Neonize saves the session in a sqlite file by default
-    whatsapp_client = NewClient("db.sqlite3")
+    # Neonize requires a local sqlite file for session storage (encryption keys, etc.)
+    # We name it neonize_session.db and ignore it in git to keep the project clean.
+    # Business data (users, registrations) is stored in Postgres.
+    whatsapp_client = NewClient("neonize_session.db")
     
     @whatsapp_client.event(MessageEv)
     def on_message(client: NewClient, message: MessageEv):
